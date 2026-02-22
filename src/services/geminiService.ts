@@ -1,6 +1,4 @@
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+import { GoogleGenAI, Type } from "@google/genai";
 
 export interface AnalysisResult {
   manufacturer: string;
@@ -79,6 +77,14 @@ const REFERENCE_DATA = `
 `;
 
 export async function analyzeProduct(input: string | { mimeType: string; data: string }): Promise<AnalysisResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY is missing!");
+    throw new Error("API ключ не найден. Пожалуйста, проверьте настройки переменных окружения в Vercel.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const isImage = typeof input !== "string";
   const model = isImage ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
 
@@ -96,26 +102,34 @@ ${REFERENCE_DATA}`;
     ? "Проанализируй этикетку на этом изображении. Определи продукт (ЛКМ, смазка или клей) и предоставь детальную информацию о его химической природе и подходящих органобентонитах, основываясь на справочных данных."
     : `Проанализируй продукт по названию: "${input}". Определи его химическую природу и предоставь детальную информацию о подходящих органобентонитах, основываясь на справочных данных.`;
 
-  const response = await ai.models.generateContent({
-    model: model,
-    contents: {
-      parts: [
-        isImage ? { inlineData: input } : { text: "" },
-        { text: prompt }
-      ],
-    },
-    config: {
-      systemInstruction,
-      responseMimeType: "application/json",
-      responseSchema: ANALYSIS_SCHEMA,
-      tools: [{ googleSearch: {} }],
-    },
-  });
-
   try {
-    return JSON.parse(response.text || "{}");
-  } catch (e) {
-    console.error("Failed to parse Gemini response", e);
-    throw new Error("Не удалось обработать ответ от нейросети.");
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: {
+        parts: [
+          ...(isImage ? [{ inlineData: input }] : []),
+          { text: prompt }
+        ],
+      },
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: ANALYSIS_SCHEMA,
+        tools: [{ googleSearch: {} }],
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new Error("Модель вернула пустой ответ. Возможно, запрос был заблокирован фильтрами безопасности.");
+    }
+
+    return JSON.parse(text);
+  } catch (e: any) {
+    console.error("Gemini Analysis Error:", e);
+    if (e.message?.includes("API key")) {
+      throw new Error("Ошибка API ключа. Убедитесь, что GEMINI_API_KEY указан верно в настройках Vercel.");
+    }
+    throw new Error(`Ошибка при анализе: ${e.message || "Неизвестная ошибка"}`);
   }
 }
