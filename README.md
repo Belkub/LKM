@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# ChemAnalyzer: ЛКМ и Органобентонит
 
-# Run and deploy your AI Studio app
+Приложение для анализа лакокрасочных материалов, смазок и клеев. Определение химической природы и подбор подходящих марок органобентонита.
 
-This contains everything you need to run your app locally.
+## Деплой на Vercel
 
-View your app in AI Studio: https://ai.studio/apps/68f422f7-8aff-49e5-84c2-d2cb65d9c3fd
+Чтобы развернуть это приложение на Vercel, выполните следующие шаги:
 
-## Run Locally
+### 1. Подготовка репозитория
+Убедитесь, что ваш код загружен на GitHub.
 
-**Prerequisites:**  Node.js
+### 2. Импорт в Vercel
+1. Зайдите на [vercel.com](https://vercel.com) и войдите через GitHub.
+2. Нажмите **"Add New"** -> **"Project"**.
+3. Выберите ваш репозиторий `chem-analyzer-lkm`.
 
+### 3. Настройка переменных окружения (Environment Variables)
+Это критически важный шаг. В процессе настройки проекта на Vercel:
+1. Найдите раздел **Environment Variables**.
+2. Добавьте следующую переменную:
+   - **Key:** `GEMINI_API_KEY`
+   - **Value:** (Ваш API ключ от Google AI Studio)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 4. Сборка и деплой
+1. Нажмите кнопку **Deploy**.
+2. Vercel автоматически определит, что это проект на Vite, выполнит `npm run build` и опубликует его.
+
+## Локальная разработка
+
+1. Клонируйте репозиторий.
+2. Установите зависимости: `npm install`.
+3. Создайте файл `.env` и добавьте туда `GEMINI_API_KEY`.
+4. Запустите проект: `npm run dev`.
+
+## Технологии
+- React 19
+- Vite
+- Tailwind CSS 4
+- Google Gemini AI (модели 3.1 Pro и 3 Flash)
+- Motion (анимации)
+- Lucide React (иконки)
