@@ -77,11 +77,13 @@ const REFERENCE_DATA = `
 `;
 
 export async function analyzeProduct(input: string | { mimeType: string; data: string }): Promise<AnalysisResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  // В Vite/Vercel это самый надежный способ получить переменную
+  // @ts-ignore
+  const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
   
-  if (!apiKey) {
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
     console.error("GEMINI_API_KEY is missing!");
-    throw new Error("API ключ не найден. Пожалуйста, проверьте настройки переменных окружения в Vercel.");
+    throw new Error("API ключ не найден. Пожалуйста: 1. Добавьте VITE_GEMINI_API_KEY в Settings -> Environment Variables на Vercel. 2. Перейдите в Deployments -> Redeploy.");
   }
 
   const ai = new GoogleGenAI({ apiKey });
