@@ -104,23 +104,39 @@ ${REFERENCE_DATA}`;
     ? "Проанализируй этикетку на этом изображении. Определи продукт (ЛКМ, смазка или клей) и предоставь детальную информацию о его химической природе и подходящих органобентонитах, основываясь на справочных данных."
     : `Проанализируй продукт по названию: "${input}". Определи его химическую природу и предоставь детальную информацию о подходящих органобентонитах, основываясь на справочных данных.`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: {
-        parts: [
-          ...(isImage ? [{ inlineData: input }] : []),
-          { text: prompt }
-        ],
-      },
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: ANALYSIS_SCHEMA,
-        tools: [{ googleSearch: {} }],
-      },
-    });
+  // Функция для выполнения запроса с повторными попытками
+  const fetchWithRetry = async (retries = 3, delay = 2000): Promise<any> => {
+    try {
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: {
+          parts: [
+            ...(isImage ? [{ inlineData: input }] : []),
+            { text: prompt }
+          ],
+        },
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: ANALYSIS_SCHEMA,
+          // Если это не первая попытка, пробуем без Google Search, так как на него квоты жестче
+          tools: retries === 3 ? [{ googleSearch: {} }] : [],
+        },
+      });
+      return response;
+    } catch (e: any) {
+      const isQuotaError = e.message?.includes("429") || e.message?.includes("RESOURCE_EXHAUSTED");
+      if (isQuotaError && retries > 0) {
+        console.warn(`Quota exceeded. Retrying in ${delay}ms... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWithRetry(retries - 1, delay * 2);
+      }
+      throw e;
+    }
+  };
 
+  try {
+    const response = await fetchWithRetry();
     const text = response.text;
     if (!text) {
       throw new Error("Модель вернула пустой ответ. Возможно, запрос был заблокирован фильтрами безопасности.");
