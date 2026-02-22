@@ -88,7 +88,9 @@ export async function analyzeProduct(input: string | { mimeType: string; data: s
 
   const ai = new GoogleGenAI({ apiKey });
   const isImage = typeof input !== "string";
-  const model = isImage ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
+  // Используем gemini-3-flash-preview для всего, так как у него выше квоты в бесплатном уровне
+  // и он отлично справляется с анализом изображений.
+  const model = "gemini-3-flash-preview";
 
   const systemInstruction = `Ты — эксперт-химик в области ЛКМ и реологических добавок. 
 Твоя задача — анализировать названия продуктов и изображения этикеток, особенно на русском языке.
